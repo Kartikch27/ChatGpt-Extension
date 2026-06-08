@@ -1,15 +1,18 @@
 {
   "name": "ChatGpt-Extension",
-  "displayName": "Chat gpt extension",
+  "displayName": "ChatGPT Parallel Workers",
   "version": "0.0.1",
-  "description": "ChatGPT Batch Image Generation Manager",
+  "description": "ChatGPT Parallel Workers image generation queue manager",
   "author": "Kartik",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
-    "package": "plasmo package"
+    "package": "plasmo package",
+    "postinstall": "node scripts/copy-worker.js"
   },
   "dependencies": {
+    "lucide-react": "^0.378.0",
+    "pdfjs-dist": "^4.3.136",
     "plasmo": "0.90.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -26,8 +29,25 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "permissions": [
+      "storage",
+      "tabs",
+      "downloads",
+      "notifications",
+      "offscreen"
+    ],
     "host_permissions": [
-      "https://*/*"
+      "https://chatgpt.com/*"
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "pdf.worker.min.*.js"
+        ],
+        "matches": [
+          "<all_urls>"
+        ]
+      }
     ]
   }
 }
