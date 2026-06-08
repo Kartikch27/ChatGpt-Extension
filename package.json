@@ -1,8 +1,8 @@
 {
   "name": "ChatGpt-Extension",
-  "displayName": "ChatGPT Parallel Workers",
+  "displayName": "Gemini Parallel Workers",
   "version": "0.0.1",
-  "description": "ChatGPT Parallel Workers image generation queue manager",
+  "description": "Gemini Parallel Workers image generation queue manager",
   "author": "Kartik",
   "scripts": {
     "dev": "plasmo dev",
@@ -37,7 +37,7 @@
       "offscreen"
     ],
     "host_permissions": [
-      "https://chatgpt.com/*"
+      "https://gemini.google.com/*"
     ],
     "web_accessible_resources": [
       {

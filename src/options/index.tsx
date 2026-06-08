@@ -96,7 +96,7 @@ export default function Options() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">Extension Settings</h1>
-              <p className="text-xs text-slate-400">Configure ChatGPT Parallel Workers settings and prompt templates</p>
+              <p className="text-xs text-slate-400">Configure Gemini Parallel Workers settings and prompt templates</p>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function Options() {
                 <div className="bg-amber-600/10 border border-amber-500/20 text-amber-300 p-2.5 rounded-lg flex items-start space-x-2 mt-1">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span className="text-[10px] leading-relaxed">
-                    Running more than 8 concurrent workers requires significant system memory and increases the risk of ChatGPT rate-limiting your account.
+                    Running more than 8 concurrent workers requires significant system memory and increases the risk of Gemini rate-limiting your account.
                   </span>
                 </div>
               )}
@@ -156,7 +156,7 @@ export default function Options() {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-350 flex items-center space-x-1">
                   <span>Job Retry Threshold</span>
-                  <span className="cursor-help" title="Number of automatic generation retries if ChatGPT fails or encounters network errors.">
+                  <span className="cursor-help" title="Number of automatic generation retries if Gemini fails or encounters network errors.">
                     <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
                   </span>
                 </label>
@@ -204,7 +204,7 @@ export default function Options() {
             <div className="flex items-center justify-between">
               <div className="flex flex-col space-y-0.5">
                 <span className="text-xs font-semibold text-slate-250">Notification Sound Chime</span>
-                <span className="text-[10px] text-slate-500">Play a pleasant bell sound when a Dall-E generation completes.</span>
+                <span className="text-[10px] text-slate-500">Play a pleasant bell sound when a Gemini generation completes.</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -221,7 +221,7 @@ export default function Options() {
             <div className="flex items-center justify-between">
               <div className="flex flex-col space-y-0.5">
                 <span className="text-xs font-semibold text-slate-250">Close Tab Upon Completion</span>
-                <span className="text-[10px] text-slate-500">Automatically close ChatGPT worker tabs once processing completes or fails.</span>
+                <span className="text-[10px] text-slate-500">Automatically close Gemini worker tabs once processing completes or fails.</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -277,7 +277,7 @@ export default function Options() {
               <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <p className="text-[10px] font-semibold text-slate-300 leading-normal">
-                  Support variables compiled into your ChatGPT prompts:
+                  Support variables compiled into your Gemini prompts:
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <span className="text-[9px] font-mono bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 border border-emerald-950">{"{{ITEM}}"}</span>

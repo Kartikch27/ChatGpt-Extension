@@ -219,7 +219,7 @@ export default function Popup() {
           </div>
           <div>
             <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-              ChatGPT Parallel Workers
+              Gemini Parallel Workers
             </h1>
             <div className="flex items-center space-x-1.5 mt-0.5">
               <span className={`w-2 h-2 rounded-full ${
@@ -782,7 +782,7 @@ export default function Popup() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-350">No Active Jobs</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Please upload a PDF document containing movements or exercises above to start.</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Please paste a custom job list or upload a PDF document above to start.</p>
             </div>
           </div>
         )}

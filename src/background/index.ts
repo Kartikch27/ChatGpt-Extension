@@ -247,7 +247,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
         // Notify user
         showNotification(
           'Queue Paused (Rate Limit)',
-          `Rate limit detected on ChatGPT. The queue has been paused to prevent account flags.`
+          `Rate limit detected on Gemini. The queue has been paused to prevent account flags.`
         );
 
         if (settings.closeTabOnComplete) {
@@ -304,10 +304,10 @@ async function processQueue() {
     job.status = 'running';
     job.startedAt = Date.now();
     
-    // Create new ChatGPT tab
+    // Create new Gemini tab
     chrome.tabs.create(
       {
-        url: 'https://chatgpt.com',
+        url: 'https://gemini.google.com',
         active: false // Open in background to prevent stealing user focus
       },
       (tab) => {

@@ -23,7 +23,7 @@ export function sanitizeFilename(name: string): string {
 export async function downloadImage(url: string, movementName: string): Promise<boolean> {
   return new Promise((resolve) => {
     const safeName = sanitizeFilename(movementName);
-    const filename = `ChatGPT-Parallel-Workers/${safeName}.png`;
+    const filename = `Gemini-Parallel-Workers/${safeName}.png`;
 
     chrome.downloads.download(
       {
