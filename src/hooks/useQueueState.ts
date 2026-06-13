@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { QueueState, QueueStats, ExtensionSettings } from '../types';
+import type { QueueState, QueueStats, ExtensionSettings, LogEntry } from '../types';
 import { DEFAULT_SETTINGS } from '../storage/storageHelper';
 
 const INITIAL_STATS: QueueStats = {
@@ -20,6 +20,7 @@ export function useQueueState() {
   const [state, setState] = useState<QueueState>(INITIAL_STATE);
   const [stats, setStats] = useState<QueueStats>(INITIAL_STATS);
   const [settings, setSettings] = useState<ExtensionSettings>(DEFAULT_SETTINGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Sync state from background
@@ -33,6 +34,7 @@ export function useQueueState() {
         if (response.state) setState(response.state);
         if (response.stats) setStats(response.stats);
         if (response.settings) setSettings(response.settings);
+        if (response.logs) setLogs(response.logs);
       }
       setLoading(false);
     });
@@ -47,6 +49,8 @@ export function useQueueState() {
         if (message.state) setState(message.state);
         if (message.stats) setStats(message.stats);
         if (message.settings) setSettings(message.settings);
+      } else if (message.action === 'LOGS_UPDATED') {
+        if (message.logs) setLogs(message.logs);
       }
     };
 
@@ -86,6 +90,12 @@ export function useQueueState() {
     });
   }, [syncState]);
 
+  const clearLogs = useCallback(() => {
+    chrome.runtime.sendMessage({ action: 'CLEAR_LOGS' }, () => {
+      syncState();
+    });
+  }, [syncState]);
+
   const updateSettings = useCallback((updatedSettings: Partial<ExtensionSettings>) => {
     chrome.runtime.sendMessage({ action: 'UPDATE_SETTINGS', settings: updatedSettings }, () => {
       syncState();
@@ -104,12 +114,14 @@ export function useQueueState() {
     state,
     stats,
     settings,
+    logs,
     loading,
     startQueue,
     pauseQueue,
     resumeQueue,
     stopQueue,
     clearQueue,
+    clearLogs,
     updateSettings,
     testSound,
     testNotification,
