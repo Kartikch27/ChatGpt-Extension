@@ -27,12 +27,14 @@ export default function Popup() {
     state,
     stats,
     settings,
+    logs,
     loading,
     startQueue,
     pauseQueue,
     resumeQueue,
     stopQueue,
     clearQueue,
+    clearLogs,
     updateSettings
   } = useQueueState();
 
@@ -43,6 +45,7 @@ export default function Popup() {
   const [localTemplate, setLocalTemplate] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Sync settings when loaded
   useEffect(() => {
@@ -234,14 +237,30 @@ export default function Popup() {
           </div>
         </div>
 
-        <button
-          onClick={openOptions}
-          className="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-lg transition-all text-slate-300 hover:text-slate-100 flex items-center space-x-1.5"
-          title="Open Settings"
-        >
-          <Settings className="w-4 h-4" />
-          <span className="text-xs font-semibold">Settings</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setShowLogs(p => !p)}
+            className={`p-2 border rounded-lg transition-all flex items-center space-x-1.5 text-xs font-semibold ${
+              showLogs 
+                ? 'bg-emerald-600 border-emerald-500 text-emerald-50 hover:bg-emerald-600' 
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750 hover:text-slate-100 hover:border-slate-600'
+            }`}
+            title="Toggle System Logs"
+          >
+            <FileText className="w-4 h-4" />
+            <span>{showLogs ? 'Hide Logs' : 'Show Logs'}</span>
+          </button>
+
+          <button
+            onClick={openOptions}
+            className="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-lg transition-all text-slate-300 hover:text-slate-100 flex items-center space-x-1.5"
+            title="Open Settings"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="text-xs font-semibold">Settings</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Body Layout */}
@@ -487,304 +506,350 @@ export default function Popup() {
           </div>
         )}
 
-        {/* Preview Extracted Table (Available when PDF is uploaded but queue hasn't started) */}
-        {previewMovements.length > 0 && !state.isRunning && (
+        {showLogs ? (
           <div className="flex flex-col space-y-3 flex-1 overflow-hidden min-h-[200px]">
             <div className="flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Extracted Preview List ({previewMovements.length})
-                </h3>
-                <span className="text-xs px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 rounded-full font-mono">
-                  {previewMovements.filter((_, i) => selectedMovements[i]).length} Selected
-                </span>
-              </div>
-
-              {/* Search Box */}
-              <div className="flex items-center space-x-2 shrink-0">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search movement..."
-                    className="w-44 pl-8 pr-3 py-1 bg-slate-900 border border-slate-800 focus:border-slate-700 rounded-lg text-xs outline-none text-slate-200"
-                  />
-                </div>
-                
-                <button
-                  onClick={() => setShowAddForm(p => !p)}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-750 text-xs font-semibold text-slate-350 rounded-lg flex items-center space-x-1 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add</span>
-                </button>
-              </div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">System Logs ({logs.length})</h3>
+              <button
+                type="button"
+                onClick={clearLogs}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-900/40 border border-slate-750 text-[10px] font-bold rounded-md transition-all flex items-center space-x-1.5 text-slate-300"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear Logs</span>
+              </button>
             </div>
 
-            {/* Manual entry form */}
-            {showAddForm && (
-              <form onSubmit={handleAddMovement} className="bg-slate-900/50 border border-slate-850 p-4 rounded-xl space-y-3 shrink-0">
-                <div className="grid grid-cols-4 gap-2">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Movement Name *"
-                    value={newMovement.movementName}
-                    onChange={e => setNewMovement(p => ({ ...p, movementName: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
-                  />
-                  <input
-                    type="text"
-                    placeholder="English Name"
-                    value={newMovement.englishName}
-                    onChange={e => setNewMovement(p => ({ ...p, englishName: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Category"
-                    value={newMovement.category}
-                    onChange={e => setNewMovement(p => ({ ...p, category: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Target Muscles"
-                    value={newMovement.targetMuscles}
-                    onChange={e => setNewMovement(p => ({ ...p, targetMuscles: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="px-3 py-1 bg-slate-800 text-xs text-slate-400 hover:bg-slate-750 rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-emerald-100 font-semibold rounded-lg"
-                  >
-                    Add Row
-                  </button>
-                </div>
-              </form>
-            )}
+            <div className="flex-1 border border-slate-900 rounded-xl overflow-hidden flex flex-col bg-slate-950/40 min-h-0">
+              <div className="overflow-y-auto flex-1 p-3.5 font-mono text-[10px] space-y-2 select-text selection:bg-emerald-500/20">
+                {logs.map((log, idx) => {
+                  const time = new Date(log.timestamp).toLocaleTimeString();
+                  const colorClass = 
+                    log.type === 'error' ? 'text-rose-400 font-bold' :
+                    log.type === 'warn' ? 'text-amber-400 font-bold' :
+                    'text-slate-300';
+                  return (
+                    <div key={idx} className="flex items-start space-x-2 leading-relaxed border-b border-slate-900/60 pb-1.5 last:border-0 last:pb-0 text-left">
+                      <span className="text-slate-500 shrink-0 font-bold">[{time}]</span>
+                      <span className={`shrink-0 uppercase font-bold text-[9px] px-1 rounded ${
+                        log.type === 'error' ? 'bg-rose-950/40 text-rose-400 border border-rose-900/20' :
+                        log.type === 'warn' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/20' :
+                        'bg-slate-900 text-slate-400 border border-slate-800/40'
+                      }`}>
+                        {log.type}
+                      </span>
+                      <span className={colorClass}>{log.message}</span>
+                    </div>
+                  );
+                })}
+                {logs.length === 0 && (
+                  <div className="text-slate-500 text-center py-16">No system logs available.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Preview Extracted Table (Available when PDF is uploaded but queue hasn't started) */}
+            {previewMovements.length > 0 && !state.isRunning && (
+              <div className="flex flex-col space-y-3 flex-1 overflow-hidden min-h-[200px]">
+                <div className="flex items-center justify-between shrink-0">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Extracted Preview List ({previewMovements.length})
+                    </h3>
+                    <span className="text-xs px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 rounded-full font-mono">
+                      {previewMovements.filter((_, i) => selectedMovements[i]).length} Selected
+                    </span>
+                  </div>
 
-            {/* List Table container */}
-            <div className="flex-1 border border-slate-900 rounded-xl overflow-hidden flex flex-col bg-slate-900/10 min-h-0">
-              <table className="w-full text-left border-collapse flex flex-col min-h-0 h-full">
-                {/* Table Head */}
-                <thead className="bg-slate-900/60 border-b border-slate-850 shrink-0 flex w-full">
-                  <tr className="flex w-full py-2.5 px-4 items-center">
-                    <th className="w-10 flex items-center">
+                  {/* Search Box */}
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                       <input
-                        type="checkbox"
-                        checked={previewMovements.length > 0 && previewMovements.every((_, idx) => selectedMovements[idx])}
-                        onChange={toggleAll}
-                        className="rounded bg-slate-950 border-slate-800 text-emerald-500 focus:ring-0 cursor-pointer"
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search movement..."
+                        className="w-44 pl-8 pr-3 py-1 bg-slate-900 border border-slate-800 focus:border-slate-700 rounded-lg text-xs outline-none text-slate-200"
                       />
-                    </th>
-                    <th className="w-40 text-xs font-bold text-slate-400">Movement Name</th>
-                    <th className="w-36 text-xs font-bold text-slate-400">English Name</th>
-                    <th className="w-28 text-xs font-bold text-slate-400">Category</th>
-                    <th className="w-40 text-xs font-bold text-slate-400">Target Muscles</th>
-                    <th className="w-16 text-right text-xs font-bold text-slate-400 pr-2">Action</th>
-                  </tr>
-                </thead>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowAddForm(p => !p)}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-750 text-xs font-semibold text-slate-350 rounded-lg flex items-center space-x-1 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                </div>
 
-                {/* Table Body */}
-                <tbody className="overflow-y-auto divide-y divide-slate-850 flex-1 flex flex-col w-full min-h-0">
-                  {filteredPreview.map((movement, idx) => {
-                    const previewIdx = previewMovements.indexOf(movement);
-                    const isEditing = editingIndex === previewIdx;
-
-                    return (
-                      <tr
-                        key={previewIdx}
-                        className={`flex w-full py-2.5 px-4 items-center transition-all ${
-                          selectedMovements[previewIdx] ? 'bg-slate-900/10' : 'opacity-40 hover:opacity-75'
-                        }`}
+                {/* Manual entry form */}
+                {showAddForm && (
+                  <form onSubmit={handleAddMovement} className="bg-slate-900/50 border border-slate-850 p-4 rounded-xl space-y-3 shrink-0">
+                    <div className="grid grid-cols-4 gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Movement Name *"
+                        value={newMovement.movementName}
+                        onChange={e => setNewMovement(p => ({ ...p, movementName: e.target.value }))}
+                        className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
+                      />
+                      <input
+                        type="text"
+                        placeholder="English Name"
+                        value={newMovement.englishName}
+                        onChange={e => setNewMovement(p => ({ ...p, englishName: e.target.value }))}
+                        className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Category"
+                        value={newMovement.category}
+                        onChange={e => setNewMovement(p => ({ ...p, category: e.target.value }))}
+                        className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Target Muscles"
+                        value={newMovement.targetMuscles}
+                        onChange={e => setNewMovement(p => ({ ...p, targetMuscles: e.target.value }))}
+                        className="bg-slate-950 border border-slate-800 p-2 text-xs rounded-lg text-slate-200 outline-none focus:border-slate-700"
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(false)}
+                        className="px-3 py-1 bg-slate-800 text-xs text-slate-400 hover:bg-slate-750 rounded-lg"
                       >
-                        <td className="w-10 flex items-center">
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-emerald-100 font-semibold rounded-lg"
+                      >
+                        Add Row
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* List Table container */}
+                <div className="flex-1 border border-slate-900 rounded-xl overflow-hidden flex flex-col bg-slate-900/10 min-h-0">
+                  <table className="w-full text-left border-collapse flex flex-col min-h-0 h-full">
+                    {/* Table Head */}
+                    <thead className="bg-slate-900/60 border-b border-slate-850 shrink-0 flex w-full">
+                      <tr className="flex w-full py-2.5 px-4 items-center">
+                        <th className="w-10 flex items-center">
                           <input
                             type="checkbox"
-                            checked={!!selectedMovements[previewIdx]}
-                            onChange={() => toggleSelect(previewIdx)}
+                            checked={previewMovements.length > 0 && previewMovements.every((_, idx) => selectedMovements[idx])}
+                            onChange={toggleAll}
                             className="rounded bg-slate-950 border-slate-800 text-emerald-500 focus:ring-0 cursor-pointer"
                           />
-                        </td>
-                        <td className="w-40 overflow-hidden text-ellipsis pr-3">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editValues.movementName}
-                              onChange={e => setEditValues(p => ({ ...p, movementName: e.target.value }))}
-                              className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
-                            />
-                          ) : (
-                            <span className="text-xs font-bold text-slate-200">{movement.movementName}</span>
-                          )}
-                        </td>
-                        <td className="w-36 overflow-hidden text-ellipsis pr-3 text-slate-350">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editValues.englishName}
-                              onChange={e => setEditValues(p => ({ ...p, englishName: e.target.value }))}
-                              className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
-                            />
-                          ) : (
-                            <span className="text-xs">{movement.englishName || '-'}</span>
-                          )}
-                        </td>
-                        <td className="w-28 overflow-hidden text-ellipsis pr-3 text-slate-400">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editValues.category}
-                              onChange={e => setEditValues(p => ({ ...p, category: e.target.value }))}
-                              className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
-                            />
-                          ) : (
-                            <span className="text-xs">{movement.category || '-'}</span>
-                          )}
-                        </td>
-                        <td className="w-40 overflow-hidden text-ellipsis pr-3 text-emerald-400">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editValues.targetMuscles}
-                              onChange={e => setEditValues(p => ({ ...p, targetMuscles: e.target.value }))}
-                              className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
-                            />
-                          ) : (
-                            <span className="text-xs font-mono">{movement.targetMuscles || '-'}</span>
-                          )}
-                        </td>
-                        <td className="w-16 flex justify-end space-x-1.5 pr-2 shrink-0">
-                          {isEditing ? (
-                            <button
-                              onClick={() => saveEdit(previewIdx)}
-                              className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 rounded"
-                            >
-                              <Save className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => startEditing(previewIdx)}
-                              className="p-1 text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 rounded"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => deleteMovement(previewIdx)}
-                            className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-950/20 rounded"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+                        </th>
+                        <th className="w-40 text-xs font-bold text-slate-400">Movement Name</th>
+                        <th className="w-36 text-xs font-bold text-slate-400">English Name</th>
+                        <th className="w-28 text-xs font-bold text-slate-400">Category</th>
+                        <th className="w-40 text-xs font-bold text-slate-400">Target Muscles</th>
+                        <th className="w-16 text-right text-xs font-bold text-slate-400 pr-2">Action</th>
                       </tr>
-                    );
-                  })}
-                  {filteredPreview.length === 0 && (
-                    <tr className="flex w-full p-8 justify-center items-center text-slate-500 text-xs">
-                      <span>No matches found. Clear search or upload file.</span>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
 
-            {/* Launch queue button */}
-            <button
-              onClick={handleLaunchQueue}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-600 text-emerald-50 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] text-xs flex items-center justify-center space-x-2 shrink-0"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>Start Generation Queue</span>
-            </button>
-          </div>
-        )}
+                    {/* Table Body */}
+                    <tbody className="overflow-y-auto divide-y divide-slate-850 flex-1 flex flex-col w-full min-h-0">
+                      {filteredPreview.map((movement, idx) => {
+                        const previewIdx = previewMovements.indexOf(movement);
+                        const isEditing = editingIndex === previewIdx;
 
-        {/* Existing Jobs List in background (Shown when active queue or completed is active) */}
-        {(state.isRunning || state.jobs.length > 0) && previewMovements.length === 0 && (
-          <div className="flex flex-col space-y-3 flex-1 overflow-hidden min-h-[200px]">
-            <div className="flex items-center justify-between shrink-0">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Queue List ({state.jobs.length})</h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] text-slate-500">Auto Scroll Enabled</span>
+                        return (
+                          <tr
+                            key={previewIdx}
+                            className={`flex w-full py-2.5 px-4 items-center transition-all ${
+                              selectedMovements[previewIdx] ? 'bg-slate-900/10' : 'opacity-40 hover:opacity-75'
+                            }`}
+                          >
+                            <td className="w-10 flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={!!selectedMovements[previewIdx]}
+                                onChange={() => toggleSelect(previewIdx)}
+                                className="rounded bg-slate-950 border-slate-800 text-emerald-500 focus:ring-0 cursor-pointer"
+                              />
+                            </td>
+                            <td className="w-40 overflow-hidden text-ellipsis pr-3">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editValues.movementName}
+                                  onChange={e => setEditValues(p => ({ ...p, movementName: e.target.value }))}
+                                  className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-slate-200">{movement.movementName}</span>
+                              )}
+                            </td>
+                            <td className="w-36 overflow-hidden text-ellipsis pr-3 text-slate-350">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editValues.englishName}
+                                  onChange={e => setEditValues(p => ({ ...p, englishName: e.target.value }))}
+                                  className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
+                                />
+                              ) : (
+                                <span className="text-xs">{movement.englishName || '-'}</span>
+                              )}
+                            </td>
+                            <td className="w-28 overflow-hidden text-ellipsis pr-3 text-slate-400">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editValues.category}
+                                  onChange={e => setEditValues(p => ({ ...p, category: e.target.value }))}
+                                  className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
+                                />
+                              ) : (
+                                <span className="text-xs">{movement.category || '-'}</span>
+                              )}
+                            </td>
+                            <td className="w-40 overflow-hidden text-ellipsis pr-3 text-emerald-400">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editValues.targetMuscles}
+                                  onChange={e => setEditValues(p => ({ ...p, targetMuscles: e.target.value }))}
+                                  className="w-full bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-xs text-slate-200 outline-none"
+                                />
+                              ) : (
+                                <span className="text-xs font-mono">{movement.targetMuscles || '-'}</span>
+                              )}
+                            </td>
+                            <td className="w-16 flex justify-end space-x-1.5 pr-2 shrink-0">
+                              {isEditing ? (
+                                <button
+                                  onClick={() => saveEdit(previewIdx)}
+                                  className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 rounded"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => startEditing(previewIdx)}
+                                  className="p-1 text-slate-500 hover:text-slate-350 hover:bg-slate-800/40 rounded"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => deleteMovement(previewIdx)}
+                                className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-950/20 rounded"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredPreview.length === 0 && (
+                        <tr className="flex w-full p-8 justify-center items-center text-slate-500 text-xs">
+                          <span>No matches found. Clear search or upload file.</span>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Launch queue button */}
+                <button
+                  onClick={handleLaunchQueue}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-600 text-emerald-50 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] text-xs flex items-center justify-center space-x-2 shrink-0"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start Generation Queue</span>
+                </button>
               </div>
-            </div>
+            )}
 
-            <div className="flex-1 border border-slate-900 rounded-xl overflow-hidden flex flex-col bg-slate-900/10 min-h-0">
-              <div className="overflow-y-auto flex-1 divide-y divide-slate-850 min-h-0">
-                {state.jobs.map((job) => (
-                  <div key={job.id} className="p-3.5 flex items-center justify-between hover:bg-slate-900/20 transition-all">
-                    <div className="flex items-center space-x-3 overflow-hidden">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${
-                        job.status === 'completed' ? 'bg-emerald-500' :
-                        job.status === 'failed' ? 'bg-rose-500 animate-pulse' :
-                        job.status === 'running' ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'
-                      }`} />
-                      <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-slate-200 truncate">{job.movementName}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{job.targetMuscles || 'No target muscles specified'}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4 shrink-0 pr-1">
-                      {job.status === 'completed' && job.imageUrl && (
-                        <a
-                          href={job.imageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-emerald-400 hover:text-emerald-300 text-[10px] font-bold flex items-center space-x-1 hover:underline"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>View Image</span>
-                        </a>
-                      )}
-                      
-                      {job.status === 'failed' && (
-                        <div className="flex items-center space-x-1 text-rose-400 text-[10px] font-bold max-w-[150px] truncate" title={job.error}>
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{job.error || 'Failed'}</span>
-                        </div>
-                      )}
-
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                        job.status === 'completed' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40' :
-                        job.status === 'failed' ? 'bg-rose-950/40 text-rose-400 border border-rose-900/40' :
-                        job.status === 'running' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/40' :
-                        'bg-slate-900 text-slate-500 border border-slate-800'
-                      }`}>
-                        {job.status === 'running' ? `Running (Retry ${job.retryCount})` : job.status}
-                      </span>
-                    </div>
+            {/* Existing Jobs List in background (Shown when active queue or completed is active) */}
+            {(state.isRunning || state.jobs.length > 0) && previewMovements.length === 0 && (
+              <div className="flex flex-col space-y-3 flex-1 overflow-hidden min-h-[200px]">
+                <div className="flex items-center justify-between shrink-0">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Queue List ({state.jobs.length})</h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] text-slate-500">Auto Scroll Enabled</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                </div>
 
-        {/* Empty State when queue is empty and no file is loaded */}
-        {previewMovements.length === 0 && state.jobs.length === 0 && !parsing && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 bg-slate-900/10 border border-slate-900/60 rounded-xl">
-            <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-350">No Active Jobs</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Please paste a custom job list or upload a PDF document above to start.</p>
-            </div>
-          </div>
+                <div className="flex-1 border border-slate-900 rounded-xl overflow-hidden flex flex-col bg-slate-900/10 min-h-0">
+                  <div className="overflow-y-auto flex-1 divide-y divide-slate-850 min-h-0">
+                    {state.jobs.map((job) => (
+                      <div key={job.id} className="p-3.5 flex items-center justify-between hover:bg-slate-900/20 transition-all text-left">
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${
+                            job.status === 'completed' ? 'bg-emerald-500' :
+                            job.status === 'failed' ? 'bg-rose-500 animate-pulse' :
+                            job.status === 'running' ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'
+                          }`} />
+                          <div className="overflow-hidden">
+                            <p className="text-xs font-bold text-slate-200 truncate">{job.movementName}</p>
+                            <p className="text-[10px] text-slate-500 truncate">{job.targetMuscles || 'No target muscles specified'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4 shrink-0 pr-1">
+                          {job.status === 'completed' && job.imageUrl && (
+                            <a
+                              href={job.imageUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-emerald-400 hover:text-emerald-300 text-[10px] font-bold flex items-center space-x-1 hover:underline"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>View Image</span>
+                            </a>
+                          )}
+                          
+                          {job.status === 'failed' && (
+                            <div className="flex items-center space-x-1 text-rose-400 text-[10px] font-bold max-w-[150px] truncate" title={job.error}>
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{job.error || 'Failed'}</span>
+                            </div>
+                          )}
+
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                            job.status === 'completed' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40' :
+                            job.status === 'failed' ? 'bg-rose-950/40 text-rose-400 border border-rose-900/40' :
+                            job.status === 'running' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/40' :
+                            'bg-slate-900 text-slate-500 border border-slate-800'
+                          }`}>
+                            {job.status === 'running' ? `Running (Retry ${job.retryCount})` : job.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State when queue is empty and no file is loaded */}
+            {previewMovements.length === 0 && state.jobs.length === 0 && !parsing && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 bg-slate-900/10 border border-slate-900/60 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-350">No Active Jobs</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Please paste a custom job list or upload a PDF document above to start.</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

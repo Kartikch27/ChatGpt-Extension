@@ -1,6 +1,6 @@
 import offscreenUrl from 'url:~src/offscreen.html';
 import type { Job, ExtensionSettings, QueueState, QueueStats } from '../types';
-import { getSettings, saveSettings, getQueueState, saveQueueState, compilePrompt } from '../storage/storageHelper';
+import { getSettings, saveSettings, getQueueState, saveQueueState, compilePrompt, addLog, getLogs, clearLogs } from '../storage/storageHelper';
 import { showNotification } from '../notifications/notificationHelper';
 import { downloadImage } from '../downloads/downloadHelper';
 
@@ -18,6 +18,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (activeWorkers.has(tabId)) {
     const jobId = activeWorkers.get(tabId)!;
+    addLog('warn', `Worker tab ${tabId} was closed manually before completion.`);
     console.warn(`[Background] Worker tab ${tabId} for job ${jobId} was closed manually.`);
     handleJobFailure(jobId, 'Tab was closed manually by the user');
   }
@@ -40,6 +41,7 @@ setInterval(async () => {
   for (const [tabId, jobId] of activeWorkers.entries()) {
     const start = jobStartTime.get(jobId);
     if (start && now - start > TIMEOUT_MS) {
+      addLog('error', `Job ${jobId} on tab ${tabId} timed out after 3 minutes.`);
       console.warn(`[Background] Job ${jobId} on tab ${tabId} timed out.`);
       // Close the tab and fail/retry the job
       chrome.tabs.remove(tabId, () => {
@@ -74,6 +76,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       state.isRunning = true;
       state.isPaused = false;
       await saveQueueState(state);
+      await addLog('info', `Queue initialized with ${message.jobs.length} jobs.`);
       broadcastState();
       
       // Begin processing
@@ -85,6 +88,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       console.log('[Background] Pausing queue');
       state.isPaused = true;
       await saveQueueState(state);
+      await addLog('info', 'Queue paused.');
       broadcastState();
       sendResponse({ status: 'paused' });
       break;
@@ -94,6 +98,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       state.isPaused = false;
       state.isRunning = true;
       await saveQueueState(state);
+      await addLog('info', 'Queue resumed.');
       broadcastState();
       processQueue();
       sendResponse({ status: 'resumed' });
@@ -110,6 +115,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
         }
       }
       await saveQueueState(state);
+      await addLog('warn', 'Queue stopped by user. Resetting running workers to pending.');
       
       // Close all worker tabs
       for (const tabId of activeWorkers.keys()) {
@@ -139,7 +145,14 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       state.isRunning = false;
       state.isPaused = false;
       await saveQueueState(state);
+      await addLog('info', 'Queue cleared.');
+      await clearLogs();
       broadcastState();
+      sendResponse({ status: 'cleared' });
+      break;
+
+    case 'CLEAR_LOGS':
+      await clearLogs();
       sendResponse({ status: 'cleared' });
       break;
 
@@ -151,7 +164,8 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
 
     case 'GET_STATE':
       const stats = calculateStats(state.jobs);
-      sendResponse({ state, stats, settings });
+      const logs = await getLogs();
+      sendResponse({ state, stats, settings, logs });
       break;
 
     case 'TEST_SOUND':
@@ -172,6 +186,7 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
         const job = state.jobs.find(j => j.id === jobId);
         if (job && job.status === 'running') {
           console.log(`[Background] Tab ready for job ${jobId}. Injecting prompt...`);
+          await addLog('info', `Tab ${senderTabId} loaded for "${job.movementName}". Injecting prompt...`);
           chrome.tabs.sendMessage(senderTabId, {
             action: 'START_GENERATION',
             prompt: job.prompt
@@ -186,6 +201,8 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       if (completedTabId && activeWorkers.has(completedTabId)) {
         const jobId = activeWorkers.get(completedTabId)!;
         console.log(`[Background] Job ${jobId} completed successfully.`);
+        const job = state.jobs.find(j => j.id === jobId);
+        await addLog('info', `Job completed successfully: "${job ? job.movementName : jobId}".`);
         
         // Clean up tab tracking first to prevent manual-close trigger
         activeWorkers.delete(completedTabId);
@@ -209,6 +226,8 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       if (failedTabId && activeWorkers.has(failedTabId)) {
         const jobId = activeWorkers.get(failedTabId)!;
         console.error(`[Background] Job ${jobId} failed:`, message.error);
+        const job = state.jobs.find(j => j.id === jobId);
+        await addLog('error', `Job failed [${job ? job.movementName : jobId}]: ${message.error}`);
         
         activeWorkers.delete(failedTabId);
         jobStartTime.delete(jobId);
@@ -229,20 +248,22 @@ async function handleRuntimeMessage(message: any, sender: chrome.runtime.Message
       if (limitedTabId && activeWorkers.has(limitedTabId)) {
         const jobId = activeWorkers.get(limitedTabId)!;
         console.warn(`[Background] Rate limit triggered on job ${jobId}. Pausing queue.`);
+        const job = state.jobs.find(j => j.id === jobId);
+        await addLog('warn', `Rate limit triggered on job "${job ? job.movementName : jobId}". Pausing queue.`);
         
         activeWorkers.delete(limitedTabId);
         jobStartTime.delete(jobId);
 
         // Put job back to pending for retry later
-        const state = await getQueueState();
-        const job = state.jobs.find(j => j.id === jobId);
-        if (job) {
-          job.status = 'pending';
+        const latestState = await getQueueState();
+        const jobToRetry = latestState.jobs.find(j => j.id === jobId);
+        if (jobToRetry) {
+          jobToRetry.status = 'pending';
         }
         
         // Pause queue
-        state.isPaused = true;
-        await saveQueueState(state);
+        latestState.isPaused = true;
+        await saveQueueState(latestState);
         
         // Notify user
         showNotification(
@@ -307,7 +328,7 @@ async function processQueue() {
     // Create new Gemini tab
     chrome.tabs.create(
       {
-        url: 'https://gemini.google.com',
+        url: 'https://gemini.google.com/app',
         active: false // Open in background to prevent stealing user focus
       },
       (tab) => {
@@ -322,6 +343,7 @@ async function processQueue() {
         activeWorkers.set(tab.id, job.id);
         jobStartTime.set(job.id, Date.now());
         console.log(`[Background] Spawned tab ${tab.id} for job ${job.id}`);
+        addLog('info', `Spawned worker tab ${tab.id} for "${job.movementName}".`);
       }
     );
   }
