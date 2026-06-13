@@ -56,3 +56,10 @@ export type ExtensionMessage =
   | { action: 'DOWNLOAD_COMPLETE'; success: boolean; error?: string }
   | { action: 'STATE_UPDATED'; state: QueueState; stats: QueueStats; settings: ExtensionSettings }
   | { action: 'START_GENERATION'; prompt: string };
+
+export interface LogEntry {
+  timestamp: number;
+  type: 'info' | 'warn' | 'error';
+  message: string;
+}
+
